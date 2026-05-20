@@ -32,16 +32,19 @@ public class CapabilityUpdatePacket {
     public void encode(FriendlyByteBuf buffer) {
         buffer.writeUUID(player.getUUID());
         buffer.writeBoolean(capability.isToggledOn());
+        buffer.writeBoolean(capability.isForcedByScore()); // Added forced state
         buffer.writeByteArray(Util.serializeMap(capability.getGlowingEyesMap()));
     }
 
     public static CapabilityUpdatePacket decode(FriendlyByteBuf buffer) {
         UUID playerUUID = buffer.readUUID();
         boolean toggledOn = buffer.readBoolean();
+        boolean forcedByScore = buffer.readBoolean(); // Added forced state
         byte[] glowingEyesMap = buffer.readByteArray();
 
         IGlowingEyes capability = new GlowingEyesImpl();
         capability.setToggledOn(toggledOn);
+        capability.setForcedByScore(forcedByScore); // Apply forced state
         capability.setGlowingEyesMap(Util.deserializeMap(glowingEyesMap));
 
         return new CapabilityUpdatePacket(playerUUID, capability);
@@ -55,15 +58,15 @@ public class CapabilityUpdatePacket {
                 if (player != null) {
                     GlowingEyesCapability.setGlowingEyesMap(player, capability.getGlowingEyesMap());
                     GlowingEyesCapability.setToggledOn(player, capability.isToggledOn());
+                    GlowingEyesCapability.setForcedByScore(player, capability.isForcedByScore()); // Sync state
                 }
             } else {
                 if(context.getSender() == null) return;
 
-                // check whether the sender is the player who has been updated
                 if (!context.getSender().getUUID().equals(playerUUID)) return;
                 GlowingEyesCapability.setGlowingEyesMap(context.getSender(), capability.getGlowingEyesMap());
                 GlowingEyesCapability.setToggledOn(context.getSender(), capability.isToggledOn());
-
+                GlowingEyesCapability.setForcedByScore(context.getSender(), capability.isForcedByScore()); // Sync state
 
                 if (context.getSender().getServer() == null) return;
 
