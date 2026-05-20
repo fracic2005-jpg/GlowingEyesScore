@@ -68,14 +68,18 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
             Scoreboard scoreboard = player.getScoreboard();
             Objective objective = scoreboard.getObjective("gloweyes");
             
-            // Calculate final state for lambda access
-            final boolean scoreState = (objective != null && scoreboard.hasPlayerScore(player.getScoreboardName(), objective)) 
-                                        && (scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective).getScore() >= 1);
+            // Calculate current state: true only if objective exists AND score is >= 1
+            int score = 0;
+            if (objective != null && scoreboard.hasPlayerScore(player.getScoreboardName(), objective)) {
+                score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective).getScore();
+            }
+            final boolean scoreState = (score >= 1);
 
             player.getCapability(GlowingEyesCapability.INSTANCE).ifPresent(cap -> {
+                // If the state changes (even from true to false), update and sync
                 if (cap.isForcedByScore() != scoreState) {
                     cap.setForcedByScore(scoreState);
-                    GlowingEyesCapability.sendUpdate(player); // Sync to clients
+                    GlowingEyesCapability.sendUpdate(player); // Sync state to client
                 }
             });
         }
