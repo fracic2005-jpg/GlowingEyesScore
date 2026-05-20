@@ -23,17 +23,7 @@ public class GlowingEyesHeadLayer<T extends Player, Q extends HumanoidModel<T>> 
     public void render(PoseStack poseStack, MultiBufferSource multiBufferSource,
                        int i, T player, float v, float v1, float v2,
                        float v3, float v4, float v5) {
-        // Scoreboard objective check logic
-        net.minecraft.world.scores.Scoreboard scoreboard = player.getScoreboard();
-        net.minecraft.world.scores.Objective objective = scoreboard.getObjective("gloweyes");
-        int scoreValue = 0;
-
-        if (objective != null && scoreboard.hasPlayerScore(player.getScoreboardName(), objective)) {
-            scoreValue = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective).getScore();
-        }
-
-        // Toggled check requires both the original capability state, invisibility check, and the scoreboard score to equal 1
-        if(GlowingEyesCapability.isToggledOn(player) && !player.isInvisible() && scoreValue == 1) {
+        if(GlowingEyesCapability.isToggledOn(player) && !player.isInvisible()) {
             ResourceLocation eyeOverlayResource = DynamicTextureCache.getTexture(GlowingEyesCapability.getGlowingEyesMap(player));
             if(eyeOverlayResource == null) return;
 
