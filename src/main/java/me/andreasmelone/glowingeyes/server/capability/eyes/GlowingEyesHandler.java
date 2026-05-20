@@ -38,7 +38,11 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
 
     @Override
     public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction direction) {
-        return GlowingEyesCapability.INSTANCE.orEmpty(capability, instance);
+        // This explicitly links the handler to the Capability constant defined in GlowingEyesCapability
+        if (capability == GlowingEyesCapability.INSTANCE) {
+            return instance.cast();
+        }
+        return LazyOptional.empty();
     }
 
     @SubscribeEvent
