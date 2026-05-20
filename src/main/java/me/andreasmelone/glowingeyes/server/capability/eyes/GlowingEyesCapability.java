@@ -24,6 +24,11 @@ public class GlowingEyesCapability {
     public static void setToggledOn(Player player, boolean toggled) {
         player.getCapability(INSTANCE).ifPresent(cap -> cap.setToggledOn(toggled));
     }
+    
+    // New helper method to set the forced state
+    public static void setForcedByScore(Player player, boolean forced) {
+        player.getCapability(INSTANCE).ifPresent(cap -> cap.setForcedByScore(forced));
+    }
 
     public static HashMap<Point, Color> getGlowingEyesMap(Player player) {
         return player.getCapability(INSTANCE).map(IGlowingEyes::getGlowingEyesMap).orElse(new HashMap<>());
