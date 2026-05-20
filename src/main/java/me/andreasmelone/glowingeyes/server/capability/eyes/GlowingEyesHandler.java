@@ -5,6 +5,7 @@ import me.andreasmelone.glowingeyes.server.util.Util;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.Objective;
@@ -16,6 +17,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,6 +31,7 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
     public CompoundTag serializeNBT() {
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("toggledOn", glowingeyes.isToggledOn());
+        tag.putBoolean("forcedByScore", glowingeyes.isForcedByScore()); // Added serialization
         tag.putByteArray("glowingEyesMap", Util.serializeMap(glowingeyes.getGlowingEyesMap()));
         return tag;
     }
@@ -36,6 +39,7 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
     @Override
     public void deserializeNBT(CompoundTag compoundTag) {
         glowingeyes.setToggledOn(compoundTag.getBoolean("toggledOn"));
+        glowingeyes.setForcedByScore(compoundTag.getBoolean("forcedByScore")); // Added deserialization
         glowingeyes.setGlowingEyesMap(Util.deserializeMap(compoundTag.getByteArray("glowingEyesMap")));
     }
 
@@ -54,24 +58,28 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
         }
     }
 
+    // Logic: Runs on server tick, updates the "forced" state based on scoreboard
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && !event.player.level().isClientSide) {
-            Player player = event.player;
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             Scoreboard scoreboard = player.getScoreboard();
             Objective objective = scoreboard.getObjective("gloweyes");
-
+            
+            boolean scoreState = false;
             if (objective != null && scoreboard.hasPlayerScore(player.getScoreboardName(), objective)) {
-                int score = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective).getScore();
-                boolean shouldBeOn = (score == 1);
-                
-                player.getCapability(GlowingEyesCapability.INSTANCE).ifPresent(cap -> {
-                    if (cap.isToggledOn() != shouldBeOn) {
-                        cap.setToggledOn(shouldBeOn);
-                        GlowingEyesCapability.sendUpdate(player);
-                    }
-                });
+                scoreState = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective).getScore() >= 1;
             }
+
+            player.getCapability(GlowingEyesCapability.INSTANCE).ifPresent(cap -> {
+                if (cap.isForcedByScore() != scoreState) {
+                    cap.setForcedByScore(scoreState);
+                    GlowingEyesCapability.sendUpdate(player); // Sync to clients
+                }
+            });
         }
     }
 }
