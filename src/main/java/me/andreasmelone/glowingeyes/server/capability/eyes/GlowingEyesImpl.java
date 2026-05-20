@@ -13,6 +13,7 @@ import java.util.Properties;
 
 public class GlowingEyesImpl implements IGlowingEyes {
     private boolean toggledOn = true;
+    private boolean forcedByScore = false; // The new forced state field
     private HashMap<Point, Color> glowingEyesMap = new HashMap<>();
     private static final File PERSISTENT_FILE = new File(FMLPaths.CONFIGDIR.get().toFile(), "glowing_eyes_pattern.properties");
 
@@ -37,12 +38,23 @@ public class GlowingEyesImpl implements IGlowingEyes {
 
     @Override
     public boolean isToggledOn() {
-        return this.toggledOn;
+        // Logic: Toggled state OR forced state
+        return this.toggledOn || this.forcedByScore;
     }
 
     @Override
     public void setToggledOn(boolean toggledOn) {
         this.toggledOn = toggledOn;
+    }
+
+    @Override
+    public boolean isForcedByScore() {
+        return this.forcedByScore;
+    }
+
+    @Override
+    public void setForcedByScore(boolean forcedByScore) {
+        this.forcedByScore = forcedByScore;
     }
 
     private void saveGlobalPattern() {
