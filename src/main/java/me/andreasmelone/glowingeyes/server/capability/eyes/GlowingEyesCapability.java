@@ -33,10 +33,17 @@ public class GlowingEyesCapability {
         player.getCapability(INSTANCE).ifPresent(cap -> cap.setGlowingEyesMap(map));
     }
 
+    // 1. Used for self-updates
     public static void sendUpdate(Player player) { 
         // Keep your original packet sync logic here 
     }
 
+    // 2. The method your Packet class was missing (accepts two players)
+    public static void sendUpdate(Player target, Player receiver) {
+        // Keep your original packet sync logic here 
+    }
+
+    // 3. Used for UI/Screen updates
     public static void sendUpdate() {
         Player player = Minecraft.getInstance().player;
         if (player != null) sendUpdate(player);
