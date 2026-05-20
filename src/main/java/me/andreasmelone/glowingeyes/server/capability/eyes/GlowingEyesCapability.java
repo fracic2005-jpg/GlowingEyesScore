@@ -13,7 +13,7 @@ import java.util.HashMap;
 public class GlowingEyesCapability {
 
     // Matches GlowingEyesHandler access
-    public static final Capability<IGlowingEyes> INSTANCE = CapabilityToken.get(new CapabilityToken<>(){});
+    public static final Capability<IGlowingEyes> INSTANCE = net.minecraftforge.common.capabilities.CapabilityManager.get(new net.minecraftforge.common.capabilities.CapabilityToken<>(){});
 
     // Matches GlowingEyes::register listener
     public static void register(RegisterCapabilitiesEvent event) {
