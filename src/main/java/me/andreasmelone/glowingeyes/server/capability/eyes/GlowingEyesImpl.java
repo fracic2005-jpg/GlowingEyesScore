@@ -12,8 +12,9 @@ import java.util.Map;
 import java.util.Properties;
 
 public class GlowingEyesImpl implements IGlowingEyes {
-    private boolean toggledOn = true;
-    private boolean forcedByScore = false; // The new forced state field
+    // Set to false by default to ensure no interference with the scoreboard
+    private boolean toggledOn = false; 
+    private boolean forcedByScore = false; 
     private HashMap<Point, Color> glowingEyesMap = new HashMap<>();
     private static final File PERSISTENT_FILE = new File(FMLPaths.CONFIGDIR.get().toFile(), "glowing_eyes_pattern.properties");
 
@@ -38,8 +39,8 @@ public class GlowingEyesImpl implements IGlowingEyes {
 
     @Override
     public boolean isToggledOn() {
-        // Logic: Toggled state OR forced state
-        return this.toggledOn || this.forcedByScore;
+        // Strictly return the score-based state
+        return this.forcedByScore;
     }
 
     @Override
