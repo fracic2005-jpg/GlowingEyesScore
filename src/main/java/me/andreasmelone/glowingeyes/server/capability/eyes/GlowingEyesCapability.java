@@ -1,10 +1,15 @@
 package me.andreasmelone.glowingeyes.server.capability.eyes;
 
+import me.andreasmelone.glowingeyes.server.packets.CapabilityUpdatePacket;
+import me.andreasmelone.glowingeyes.server.packets.PacketManager;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
+import net.minecraftforge.network.PacketDistributor;
+
 import java.awt.*;
 import java.util.HashMap;
 
@@ -25,7 +30,6 @@ public class GlowingEyesCapability {
         player.getCapability(INSTANCE).ifPresent(cap -> cap.setToggledOn(toggled));
     }
     
-    // New helper method to set the forced state
     public static void setForcedByScore(Player player, boolean forced) {
         player.getCapability(INSTANCE).ifPresent(cap -> cap.setForcedByScore(forced));
     }
@@ -38,14 +42,24 @@ public class GlowingEyesCapability {
         player.getCapability(INSTANCE).ifPresent(cap -> cap.setGlowingEyesMap(map));
     }
 
-    // 1. Used for self-updates
+    // 1. Used for self-updates (Server to specific player)
     public static void sendUpdate(Player player) { 
-        // Keep your original packet sync logic here 
+        player.getCapability(INSTANCE).ifPresent(cap -> {
+            if (player instanceof ServerPlayer serverPlayer) {
+                PacketManager.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), 
+                    new CapabilityUpdatePacket(player, cap));
+            }
+        });
     }
 
-    // 2. The method your Packet class was missing (accepts two players)
+    // 2. The method for syncing target state to a specific receiver
     public static void sendUpdate(Player target, Player receiver) {
-        // Keep your original packet sync logic here 
+        target.getCapability(INSTANCE).ifPresent(cap -> {
+            if (receiver instanceof ServerPlayer serverPlayer) {
+                PacketManager.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), 
+                    new CapabilityUpdatePacket(target, cap));
+            }
+        });
     }
 
     // 3. Used for UI/Screen updates
