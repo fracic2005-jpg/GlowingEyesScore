@@ -31,7 +31,7 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
     public CompoundTag serializeNBT() {
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("toggledOn", glowingeyes.isToggledOn());
-        tag.putBoolean("forcedByScore", glowingeyes.isForcedByScore()); // Added serialization
+        tag.putBoolean("forcedByScore", glowingeyes.isForcedByScore());
         tag.putByteArray("glowingEyesMap", Util.serializeMap(glowingeyes.getGlowingEyesMap()));
         return tag;
     }
@@ -39,7 +39,7 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
     @Override
     public void deserializeNBT(CompoundTag compoundTag) {
         glowingeyes.setToggledOn(compoundTag.getBoolean("toggledOn"));
-        glowingeyes.setForcedByScore(compoundTag.getBoolean("forcedByScore")); // Added deserialization
+        glowingeyes.setForcedByScore(compoundTag.getBoolean("forcedByScore"));
         glowingeyes.setGlowingEyesMap(Util.deserializeMap(compoundTag.getByteArray("glowingEyesMap")));
     }
 
@@ -58,7 +58,6 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
         }
     }
 
-    // Logic: Runs on server tick, updates the "forced" state based on scoreboard
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -69,10 +68,9 @@ public class GlowingEyesHandler implements INBTSerializable<CompoundTag>, ICapab
             Scoreboard scoreboard = player.getScoreboard();
             Objective objective = scoreboard.getObjective("gloweyes");
             
-            boolean scoreState = false;
-            if (objective != null && scoreboard.hasPlayerScore(player.getScoreboardName(), objective)) {
-                scoreState = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective).getScore() >= 1;
-            }
+            // Calculate final state for lambda access
+            final boolean scoreState = (objective != null && scoreboard.hasPlayerScore(player.getScoreboardName(), objective)) 
+                                        && (scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective).getScore() >= 1);
 
             player.getCapability(GlowingEyesCapability.INSTANCE).ifPresent(cap -> {
                 if (cap.isForcedByScore() != scoreState) {
