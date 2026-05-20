@@ -3,22 +3,24 @@ package me.andreasmelone.glowingeyes.server.capability.eyes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.Scoreboard;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.CapabilityToken;
+import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import java.awt.*;
 import java.util.HashMap;
 
 public class GlowingEyesCapability {
+    // 1. RESTORE YOUR ORIGINAL CONSTANTS
+    public static final Capability<IGlowingEyes> GLOWING_EYES = CapabilityManager.get(new CapabilityToken<>(){});
 
-    // ... Keep your existing GLOWING_EYES registration and Provider hooks here ...
-
+    // 2. ADD THE NEW DYNAMIC TOGGLE CHECK
     public static boolean isToggledOn(Player player) {
         if (player == null) return false;
 
-        // 1. Grab the raw capability toggle state safely
-        boolean capToggle = player.getCapability(GlowingEyesProvider.GLOWING_EYES)
+        boolean capToggle = player.getCapability(GLOWING_EYES)
                 .map(IGlowingEyes::isToggledOn)
                 .orElse(false);
 
-        // 2. Dynamically grab the exact scoreboard data for the player currently being rendered
         Scoreboard scoreboard = player.getScoreboard();
         Objective objective = scoreboard.getObjective("gloweyes");
         int scoreValue = 0;
@@ -27,19 +29,24 @@ public class GlowingEyesCapability {
             scoreValue = scoreboard.getOrCreatePlayerScore(player.getScoreboardName(), objective).getScore();
         }
 
-        // Both conditions must pass to make the layer visible
         return capToggle && (scoreValue == 1);
     }
 
+    // 3. RESTORE YOUR ORIGINAL METHODS (DO NOT DELETE THESE)
+    public static void setToggledOn(Player player, boolean toggled) {
+        player.getCapability(GLOWING_EYES).ifPresent(cap -> cap.setToggledOn(toggled));
+    }
+
     public static HashMap<Point, Color> getGlowingEyesMap(Player player) {
-        return player.getCapability(GlowingEyesProvider.GLOWING_EYES)
-                .map(IGlowingEyes::getGlowingEyesMap)
-                .orElse(new HashMap<>());
+        return player.getCapability(GLOWING_EYES).map(IGlowingEyes::getGlowingEyesMap).orElse(new HashMap<>());
     }
 
     public static void setGlowingEyesMap(Player player, HashMap<Point, Color> map) {
-        player.getCapability(GlowingEyesProvider.GLOWING_EYES).ifPresent(cap -> cap.setGlowingEyesMap(map));
+        player.getCapability(GLOWING_EYES).ifPresent(cap -> cap.setGlowingEyesMap(map));
     }
-    
-    // ... Keep your existing sendUpdate(player) or other network syncing methods below ...
+
+    // RESTORE YOUR ORIGINAL PACKET/SYNC METHODS
+    public static void sendUpdate(Player player) { /* YOUR ORIGINAL PACKET LOGIC HERE */ }
+    public static void sendUpdate(Player target, Player receiver) { /* YOUR ORIGINAL PACKET LOGIC HERE */ }
+    public static void register(RegisterCapabilitiesEvent event) { /* YOUR ORIGINAL REGISTRATION */ }
 }
