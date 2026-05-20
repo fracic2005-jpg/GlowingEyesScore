@@ -1,5 +1,7 @@
 package me.andreasmelone.glowingeyes.client.gui;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.mojang.logging.LogUtils;
 import me.andreasmelone.glowingeyes.client.gui.preset.PresetsScreen;
 import me.andreasmelone.glowingeyes.client.util.ColorUtil;
@@ -17,9 +19,14 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EyesEditorScreen extends Screen {
@@ -43,7 +50,14 @@ public class EyesEditorScreen extends Screen {
         AtomicBoolean saved = new AtomicBoolean(false);
         Player player = Minecraft.getInstance().player;
         if(player != null) {
-            pixels = GlowingEyesCapability.getGlowingEyesMap(player);
+            // Check local file cache first, fall back to capability if empty
+            pixels = loadPersistentMap();
+            if (pixels.isEmpty()) {
+                pixels = GlowingEyesCapability.getGlowingEyesMap(player);
+            } else {
+                GlowingEyesCapability.setGlowingEyesMap(player, pixels);
+                GlowingEyesCapability.sendUpdate();
+            }
             saved.set(true);
         }
         if(!saved.get()) {
@@ -97,18 +111,6 @@ public class EyesEditorScreen extends Screen {
                     if(mode == Mode.ERASER) button.active = false;
                 }
         ));
-//        modeButtons.add(new ImageButton(
-//                this.guiLeft + 8, this.guiTop + 120,
-//                20, 20,
-//                0, 0, 20,
-//                TextureLocations.COLOR_PICKER,
-//                64, 64,
-//                button -> {
-//                    mode = Mode.PICKER;
-//                    modeButtons.forEach(b -> b.active = true);
-//                    if(mode == Mode.PICKER) button.active = false;
-//                }
-//        ));
 
         modeButtons.get(0).onPress();
         modeButtons.forEach(this::addRenderableWidget);
@@ -119,13 +121,6 @@ public class EyesEditorScreen extends Screen {
 
     boolean displaySecondLayer = false;
 
-    /**
-     * The method that renders the screen
-     * @param guiGraphics The guiGraphics object that handles rendering
-     * @param mouseX The x position of the mouse
-     * @param mouseY The y position of the mouse
-     * @param deltaTime The time since the last frame
-     */
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float deltaTime) {
         renderBackground(guiGraphics);
@@ -248,6 +243,7 @@ public class EyesEditorScreen extends Screen {
         Player player = Minecraft.getInstance().player;
         if(player != null) {
             GlowingEyesCapability.setGlowingEyesMap(player, pixels);
+            savePersistentMap(pixels); // Write data to global storage layout on exit
             saved.set(true);
 
             GlowingEyesCapability.sendUpdate();
@@ -275,5 +271,49 @@ public class EyesEditorScreen extends Screen {
         BRUSH,
         ERASER,
         PICKER;
+    }
+
+    // Helper functions for global config read/write operations
+    private void savePersistentMap(HashMap<Point, Color> dataMap) {
+        try {
+            File configFile = new File(Minecraft.getInstance().gameDirectory, "config/glowing_eyes_persistent.json");
+            if (!configFile.getParentFile().exists()) configFile.getParentFile().mkdirs();
+            
+            // Format serialization layout safely
+            Map<String, Integer> serializableMap = new HashMap<>();
+            for (Map.Entry<Point, Color> entry : dataMap.entrySet()) {
+                String key = entry.getKey().x + "," + entry.getKey().y;
+                serializableMap.put(key, entry.getValue().getRGB());
+            }
+            
+            try (FileWriter writer = new FileWriter(configFile)) {
+                new Gson().toJson(serializableMap, writer);
+            }
+        } catch (Exception e) {
+            LogUtils.getLogger().error("Failed to write cross-world glowing eye data", e);
+        }
+    }
+
+    private HashMap<Point, Color> loadPersistentMap() {
+        HashMap<Point, Color> loadedPixels = new HashMap<>();
+        try {
+            File configFile = new File(Minecraft.getInstance().gameDirectory, "config/glowing_eyes_persistent.json");
+            if (configFile.exists()) {
+                try (FileReader reader = new FileReader(configFile)) {
+                    Type type = new TypeToken<Map<String, Integer>>(){}.getType();
+                    Map<String, Integer> serializableMap = new Gson().fromJson(reader, type);
+                    if (serializableMap != null) {
+                        for (Map.Entry<String, Integer> entry : serializableMap.entrySet()) {
+                            String[] coords = entry.getKey().split(",");
+                            Point p = new Point(Integer.parseInt(coords[0]), Integer.parseInt(coords[1]));
+                            loadedPixels.put(p, new Color(entry.getValue(), true));
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LogUtils.getLogger().error("Failed to read cross-world glowing eye data", e);
+        }
+        return loadedPixels;
     }
 }
