@@ -13,6 +13,11 @@ public interface IGlowingEyes extends Serializable {
     @Nonnull
     HashMap<Point, Color> getGlowingEyesMap();
     void setGlowingEyesMap(@Nonnull HashMap<Point, Color> glowingEyesMap);
+    
     boolean isToggledOn();
     void setToggledOn(boolean toggledOn);
+    
+    // New methods for scoreboard/tag override
+    boolean isForcedByScore();
+    void setForcedByScore(boolean forcedByScore);
 }
